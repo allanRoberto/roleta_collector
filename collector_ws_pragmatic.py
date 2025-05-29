@@ -1,105 +1,153 @@
-import asyncio
-import json
-import os
-import websockets
+import asyncio, json, logging, os, datetime, requests, time, websocket
+
 from websockets.exceptions import ConnectionClosedError
+
+from datetime import UTC 
+
 from helpers.utils.redis_client import r
-import time
 
-id_to_slug = {
-    "210": "pragmatic-auto-mega-roulette",
-    "204": "pragmatic-mega-roulette",
-    "292": "pragmatic-immersive-roulette-deluxe",
-    "213": "pragmatic-korean-roulette",
-    "225": "pragmatic-auto-roulette",
-    "201": "pragmatic-roulette-2",
-    "266": "pragmatic-vip-auto-roulette",
-    "226": "pragmatic-speed-auto-roulette",
-    "230": "pragmatic-roulete-3",
-    "203": "pragmatic-speed-roulette-1",
-    "227": "pragmatic-roulette-1",
-    "545": "pragmatic-vip-roulette",
-    "211a1": "pragmatic-lucky-6-roulette",
-    "208": "pragmatic-turkish-mega-roulette",
-    "287": "pragmatic-mega-roulette-brazilian",
-    "298": "pragmatic-italian-mega-roulette",
-    "224": "pragmatic-turkish-roulette",
-    "240": "pragmatic-powerup-roulette",
-    "205": "pragmatic-speed-roulette-2",
-    "233": "pragmatic-romanian-roulette",
-    "234": "pragmatic-roulette-italian",
-    "237": "pragmatic-brazilian-roulette",
-    "222": "pragmatic-german-roulette",
-    "221": "pragmatic-russian-roulette",  
-    "223": "pragmatic-roulette-italia-tricolore",
-    "262": "pragmatic-vietnamese-roulette",
-    "206": "pragmatic-roulette-macao"
-}
+from pymongo import MongoClient
 
-async def subscribe(ws):
-    subscribe_message = {
-        "type": "subscribe",
-        "isDeltaEnabled": True,
-        "casinoId": "ppcar00000005644",
-        "key": list(id_to_slug.keys()),
-        "currency": "BRL"
-    }
-    await ws.send(json.dumps(subscribe_message))
 
-async def handle_message(message: str):
-    try:
-        data = json.loads(message)
-        table_id = data.get("tableId")
+MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://revesbot:DlBnGmlimRZpIblr@cluster0.c14fnit.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 
-        if table_id not in id_to_slug or "last20Results" not in data:
-            return
+logging.basicConfig(level=logging.INFO)
 
-        slug = id_to_slug[table_id]
-        last_result = data["last20Results"][0]
-        result = int(last_result["result"])
-        game_id = last_result.get("gameId")
+# Mongo
+client = MongoClient(MONGO_URL)
+db = client["roleta_db"]
+collection = db["history"]
 
-        if not game_id:
-            print(f"[{slug}] ⚠️ gameId ausente")
-            return
 
-        dedup_key = f"game:{slug}:{game_id}"
-        if not r.exists(dedup_key):
-            
-            r.set(dedup_key, 1, ex=300)
-            r.lpush(f"history:{slug}", result)
-            r.ltrim(f"history:{slug}", 0, 199)
+class Pragmatic : 
+    def __init__(self):
+        self.desiredArgs = {
+            "210": "pragmatic-auto-mega-roulette",
+            "204": "pragmatic-mega-roulette",
+            "292": "pragmatic-immersive-roulette-deluxe",
+            "213": "pragmatic-korean-roulette",
+            "225": "pragmatic-auto-roulette",
+            "201": "pragmatic-roulette-2",
+            "266": "pragmatic-vip-auto-roulette",
+            "226": "pragmatic-speed-auto-roulette",
+            "230": "pragmatic-roulete-3",
+            "203": "pragmatic-speed-roulette-1",
+            "227": "pragmatic-roulette-1",
+            "545": "pragmatic-vip-roulette",
+            "211a1": "pragmatic-lucky-6-roulette",
+            "208": "pragmatic-turkish-mega-roulette",
+            "287": "pragmatic-mega-roulette-brazilian",
+            "298": "pragmatic-italian-mega-roulette",
+            "224": "pragmatic-turkish-roulette",
+            "240": "pragmatic-powerup-roulette",
+            "205": "pragmatic-speed-roulette-2",
+            "233": "pragmatic-romanian-roulette",
+            "234": "pragmatic-roulette-italian",
+            "237": "pragmatic-brazilian-roulette",
+            "222": "pragmatic-german-roulette",
+            "221": "pragmatic-russian-roulette",  
+            "223": "pragmatic-roulette-italia-tricolore",
+            "262": "pragmatic-vietnamese-roulette",
+            "206": "pragmatic-roulette-macao"
+        }
+        self.max_reconnect_attempts = 3
+        self.reconnect_attempts = 0
+        self.results = {}
+
+
+    def connect_to_wss(self):
+        def on_message(ws, message) :
+            data = json.loads(message)
+            table_id = data.get("tableId")
+
+            if table_id not in self.desiredArgs or "last20Results" not in data:
+                return
+
+            slug = self.desiredArgs[table_id]
+            last_result = data["last20Results"][0]
+            result = int(last_result["result"])
+            game_id = last_result.get("gameId")
+
+            now = datetime.datetime.now(UTC)
+
+            collection.insert_one({
+                "roulette_id": slug,
+                "roulette_name" : slug,
+                "value": result,
+                "timestamp": now
+            })
+
+            # trim para 500
+            count = collection.count_documents({"roulette_id": slug})
+            if count > 500:
+                exced = count - 500
+                antigos = collection.find(
+                    {"roulette_id": slug},
+                    sort=[("timestamp", 1)],
+                    limit=exced
+                )
+                ids = [d["_id"] for d in antigos]
+                collection.delete_many({"_id": {"$in": ids}})
+
             r.publish("new_result", json.dumps({"slug": slug, "result": result}))
             print(f"[{slug}] ✅ Resultado salvo: {result} (gameId: {game_id})")
-        else:
-            print(f"[{slug}] ⏩ Resultado já registrado: {result}")
-    except Exception as e:
-        print(Exception, e)
-        print("Erro ao processar:", e)
+        
+        def on_error(ws, error):
+            print("Error:", error)
 
-async def run_pragmatic():
-    print("🚀 Iniciando conexão com WebSocket da Pragmatic...")
+        def on_close(ws, close_status_code, close_msg):
+            print("### closed ###")
+            self.on_ws_close()
+        
+        def on_open(ws):
 
-    ws_url = "wss://dga.pragmaticplaylive.net/ws"
-    headers = {
-        "Origin": "https://client.pragmaticplaylive.net",
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            subscribe_message = {
+                "type": "subscribe",
+                "isDeltaEnabled": True,
+                "casinoId": "ppcar00000005644",
+                "key": list(self.desiredArgs.keys()),
+                "currency": "BRL"
+            }
+            print("Connection opened")
+            ws.send(json.dumps(subscribe_message))
+
+        self.initiate_connection(on_open, on_message, on_error, on_close)
+
+    def initiate_connection(self, on_open, on_message, on_error, on_close) :
+        wss_url = "wss://dga.pragmaticplaylive.net/ws"
+
+        headers = {
+            "Origin": "https://client.pragmaticplaylive.net",
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            )
+        }
+
+        ws = websocket.WebSocketApp(
+            wss_url,
+            on_open=on_open,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close,
         )
-    }
 
-    while True:
-        try:
-            print("🔌 Conectando ao WebSocket...")
-            async with websockets.connect(ws_url, additional_headers=headers) as ws:
-                print("✅ Conectado! Enviando inscrição...")
-                await subscribe(ws)
-                print("📡 Inscrição enviada. Aguardando mensagens...")
-                async for message in ws:
-                    await handle_message(message)
-        except (ConnectionClosedError, OSError) as e:
-            print(f"🔌 Conexão perdida: {e}, tentando reconectar em 2s…")
-            await asyncio.sleep(0.5 )
+        ws.run_forever()
 
- 
+    def on_ws_close(self):
+        if self.reconnect_attempts < self.max_reconnect_attempts:
+            self.reconnect_attempts += 1
+            print(f"Attempt to reconnect ({self.reconnect_attempts})...")
+            time.sleep(1)
+            self.connect_to_wss()
+        else:
+            print("Max reconnect attempts reached. Starting over...")
+            self.reconnect_attempts = 0
+            self.start()
+
+    def start(self):
+        self.reconnect_attempts = 0
+        self.connect_to_wss()
+
+if __name__ == "__main__":
+    Pragmatic().start()

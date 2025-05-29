@@ -1,9 +1,18 @@
-import requests
-import time
-import websocket
-import json
-import os
+import json, logging, os, datetime, requests, time, websocket
+
+from datetime import UTC 
 from helpers.utils.redis_client import r
+from pymongo import MongoClient
+
+
+MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://revesbot:DlBnGmlimRZpIblr@cluster0.c14fnit.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+
+logging.basicConfig(level=logging.INFO)
+
+# Mongo
+client = MongoClient(MONGO_URL)
+db = client["roleta_db"]
+collection = db["history"]
 
 
 class Evolution:
@@ -11,11 +20,11 @@ class Evolution:
         self.url = "https://vaidebet.bet.br/api/user/login"
         self.payloadLogin = {
             "requestBody": {
-                "username": "Dagurasu",
+                "username": "allanrsilva",
                 "email": "null",
                 "phone": "null",
                 "keepLoggedIn": "null",
-                "password": "Vmkmaster56",
+                "password": "419300@Al",
                 "loginType": "1",
             }
         }
@@ -27,6 +36,8 @@ class Evolution:
         }
 
         self.urlevo = "https://vaidebet.bet.br/api/user/casinoapi/openGame"
+
+        
         self.desiredArgs = {
             "7nyiaws9tgqrzaz3": "evolution-Football-studio-roulette",
             "7x0b1tgh7agmf6hv": "evolution-immersive-roulette",
@@ -101,12 +112,11 @@ class Evolution:
                     "languageId": 23,
                 }
 
+                print(self.urlevo)
                 response2 = session.post(self.urlevo, json=payloadEvo, headers=headersEvo)
 
                 data = response2.json()
-                print(data)
                 url = data["data"]["gameUrl"]
-                print(url)
                 response = session.get(url)
 
                 EVOSESSIONID = (
@@ -115,8 +125,7 @@ class Evolution:
                     .split("EVOSESSIONID=")[1]
                     .split(";")[0]
                 )
-                
-                print(EVOSESSIONID)
+
                 return EVOSESSIONID
 
         except Exception as e:
@@ -136,14 +145,33 @@ class Evolution:
                         game_name = self.desiredArgs[arg]
                         game_results = message["args"][arg]["results"][0][0]['number']
 
-                        print(game_results)
 
                         if game_results :
                             slug = game_name
                             last_result = game_results
                             result = int(last_result)
-                            r.lpush(f"history:{slug}", result)
-                            r.ltrim(f"history:{slug}", 0, 199)
+
+                            now = datetime.datetime.now(UTC)
+
+                            collection.insert_one({
+                                "roulette_id": slug,
+                                "roulette_name" : slug,
+                                "value": result,
+                                "timestamp": now
+                            })
+
+                            # trim para 500
+                            count = collection.count_documents({"roulette_id": slug})
+                            if count > 500:
+                                exced = count - 500
+                                antigos = collection.find(
+                                    {"roulette_id": slug},
+                                    sort=[("timestamp", 1)],
+                                    limit=exced
+                                )
+                                ids = [d["_id"] for d in antigos]
+                                collection.delete_many({"_id": {"$in": ids}})
+
                             r.publish("new_result", json.dumps({"slug": slug, "result": result}))
                             print(f"[{slug}] ✅ Resultado salvo: {result}")
                         else :
@@ -168,7 +196,8 @@ class Evolution:
         self.initiate_connection(on_open, on_message, on_error, on_close)
 
     def initiate_connection(self, on_open, on_message, on_error, on_close):
-        wss_url = f"wss://vaidebetoss.evo-games.com/public/lobby/socket/v2/rgha3i557svrwcks?messageFormat=json&device=Desktop&features=opensAt%2CmultipleHero%2CshortThumbnails%2CskipInfosPublished%2Csmc%2CuniRouletteHistory%2CbacHistoryV2%2Cfilters%2CtableDecorations&instance=ai4sza-rgha3i557svrwcks-&EVOSESSIONID={self.evoSessionId}&client_version=6.20250422.71712.51287-7ddfd95722"
+        wss_url = f"wss://vaidebetoss.evo-games.com/public/lobby/socket/v2/s3xlf5xgpo4qfdwx?messageFormat=json&device=Desktop&features=opensAt%2CmultipleHero%2CshortThumbnails%2CskipInfosPublished%2Csmc%2CuniRouletteHistory%2CbacHistoryV2%2Cfilters%2CtableDecorations&instance=cjysk7-s3xlf5xgpo4qfdwx-&EVOSESSIONID={self.evoSessionId}&client_version=6.20250520.71644.51887-e2cf87eb3b"
+
         ws = websocket.WebSocketApp(
             wss_url,
             on_open=on_open,
