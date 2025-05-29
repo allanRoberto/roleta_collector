@@ -66,8 +66,8 @@ class Ezugi :
             if self.reconnect_attempts < self.max_reconnect_attempts:
                 self.reconnect_attempts += 1
                 print(f"Attempt to reconnect ({self.reconnect_attempts})...")
-                time.sleep(1)
-                self.connect_to_wss()
+                time.sleep(5)
+                self.start()
             else:
                 print("Max reconnect attempts reached. Starting over...")
                 self.reconnect_attempts = 0
