@@ -153,17 +153,27 @@ class Evolution:
 
                             now = datetime.datetime.now(UTC)
 
-                            collection.insert_one({
-                                "roulette_id": slug,
-                                "roulette_name" : slug,
-                                "value": result,
-                                "timestamp": now
-                            })
+                            try :
+
+                                res = collection.insert_one({
+                                    "roulette_id": slug,
+                                    "roulette_name" : slug,
+                                    "value": result,
+                                    "timestamp": now
+                                })
+
+                                logging.info("Documento inserido com _id=%s", res.inserted_id)
+
+
+                            except Exception as e:
+                                logging.error("Erro ao inserir documento no MongoDB: %s", e, exc_info=True)
 
                             # trim para 500
                             count = collection.count_documents({"roulette_id": slug})
-                            if count > 500:
-                                exced = count - 500
+
+                            print(count)
+                            if count > 2000:
+                                exced = count - 2000
                                 antigos = collection.find(
                                     {"roulette_id": slug},
                                     sort=[("timestamp", 1)],

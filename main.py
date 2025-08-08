@@ -6,6 +6,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 from collector_ws_pragmatic import Pragmatic
 from collector_ws_evolution import Evolution
+from collector_ws_miguel import Results
 from collector_ws_ezugi import Ezugi
 
 class DummyHandler(BaseHTTPRequestHandler):
@@ -31,14 +32,15 @@ def main():
     # Instancia collectors
     pragmatic = Pragmatic()
     evolution = Evolution()
+    results = Results()
     ezugi     = Ezugi()
 
     # Cria threads para collectors e dummy server
     threads = [
-        threading.Thread(target=pragmatic.start, name="PragmaticCollector"),
-        threading.Thread(target=evolution.start, name="EvolutionCollector"),
+        # threading.Thread(target=pragmatic.start, name="PragmaticCollector"),
+        # threading.Thread(target=evolution.start, name="EvolutionCollector"),
+        threading.Thread(target=results.start, name="ResultsCollector"),
         threading.Thread(target=ezugi.start,     name="EzugiCollector"),
-        threading.Thread(target=run_dummy_server, name="DummyHTTPServer"),
     ]
 
     # Marca como daemon e inicia todas

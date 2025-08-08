@@ -57,6 +57,7 @@ class Pragmatic :
 
     def connect_to_wss(self):
         def on_message(ws, message) :
+
             data = json.loads(message)
             table_id = data.get("tableId")
 
@@ -64,6 +65,7 @@ class Pragmatic :
                 return
 
             slug = self.desiredArgs[table_id]
+
             last_result = data["last20Results"][0]
             result = int(last_result["result"])
             game_id = last_result.get("gameId")
@@ -79,17 +81,19 @@ class Pragmatic :
 
             # trim para 500
             count = collection.count_documents({"roulette_id": slug})
-            if count > 500:
-                exced = count - 500
+            if count > 2000:
+                exced = count - 2000
                 antigos = collection.find(
                     {"roulette_id": slug},
                     sort=[("timestamp", 1)],
                     limit=exced
                 )
                 ids = [d["_id"] for d in antigos]
+
                 collection.delete_many({"_id": {"$in": ids}})
 
             r.publish("new_result", json.dumps({"slug": slug, "result": result}))
+
             print(f"[{slug}] ✅ Resultado salvo: {result} (gameId: {game_id})")
         
         def on_error(ws, error):
@@ -100,11 +104,12 @@ class Pragmatic :
             self.on_ws_close()
         
         def on_open(ws):
+        
 
             subscribe_message = {
                 "type": "subscribe",
                 "isDeltaEnabled": True,
-                "casinoId": "ppcar00000005644",
+                "casinoId": "ppcdd00000006702",
                 "key": list(self.desiredArgs.keys()),
                 "currency": "BRL"
             }

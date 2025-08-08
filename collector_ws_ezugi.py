@@ -94,8 +94,8 @@ class Ezugi :
 
                         # trim para 500
                         count = collection.count_documents({"roulette_id": table_name})
-                        if count > 500:
-                            exced = count - 500
+                        if count > 2000:
+                            exced = count - 2000
                             antigos = collection.find(
                                 {"roulette_id": table_name},
                                 sort=[("timestamp", 1)],
