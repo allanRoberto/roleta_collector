@@ -116,6 +116,8 @@ class Results :
                 return
             
             slug = self.desiredArgs[game_key]   
+            result = int(results[0])
+
             #print(f"[{slug}] ✅ Resultado salvo: {results[0]}")
 
             now = datetime.datetime.now(UTC)
@@ -123,7 +125,7 @@ class Results :
             collection.insert_one({
                 "roulette_id": slug,
                 "roulette_name" : slug,
-                "value": results[0],
+                "value": result,
                 "timestamp": now
             })
 
@@ -140,9 +142,9 @@ class Results :
 
                 collection.delete_many({"_id": {"$in": ids}})
 
-            r.publish("new_result", json.dumps({"slug": slug, "result": results[0]}))
+            r.publish("new_result", json.dumps({"slug": slug, "result": result}))
 
-            print(f"[{slug}] ✅ Resultado salvo: {results[0]} (gameId: {game})")
+            print(f"[{slug}] ✅ Resultado salvo: {result} (gameId: {game})")
         
         def on_error(ws, error):
             print("Error:", error)
