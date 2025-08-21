@@ -59,30 +59,30 @@ class Results :
             "Football French Roulette" : "playtech-football-french-roulette",
             "Roulette Italiana" : "playtech-roulette-italiana",
 
-            "Roulette Macao" : "pragmatic-roulette-macao",
-            "Roleta Brasileira Pragmatic" : "pragmatic-brazilian-roulette",
-            "Mega Roulette" : "pragmatic-mega-roulette",
-            "Power Up Roulette": "pragmatic-powerup-roulette",
-            "Immersive Roulette Deluxe": "pragmatic-immersive-roulette-deluxe",
-            "Auto Mega Roulette": "pragmatic-auto-mega-roulette",
-            "Auto Roulette": "pragmatic-auto-roulette",
+            # "Roulette Macao" : "pragmatic-roulette-macao",
+            # "Roleta Brasileira Pragmatic" : "pragmatic-brazilian-roulette",
+            # "Mega Roulette" : "pragmatic-mega-roulette",
+            # "Power Up Roulette": "pragmatic-powerup-roulette",
+            # "Immersive Roulette Deluxe": "pragmatic-immersive-roulette-deluxe",
+            # "Auto Mega Roulette": "pragmatic-auto-mega-roulette",
+            # "Auto Roulette": "pragmatic-auto-roulette",
 
-            "7x0b1tgh7agmf6hv": "evolution-immersive-roulette",
-            "8clwnwrupuvf0osq": "evolution-ruleta-en-vivo",
-            "48z5pjps3ntvqc1b": "evolution-auto-roulette",
-            "01rb77cq1gtenhmo": "evolution-auto-roulette-vip",
-            "LightningSpain01": "evolution-ruleta-relampago-en-vivo",
-            "LightningTable01": "evolution-lightning-roulette",
-            "PorROU0000000001": "evolution-roleta-ao-vivo",
-            "PorROULigh000001": "evolution-roleta-relampago",
-            "SpeedAutoRo00001": "evolution-speed-auto-roulette",
-            "XxxtremeLigh0001": "evolution-xxxtreme-lightning-roulette",
-            "laiayvwaiczqe2p7": "evolution-ruleta-automatica",
-            "lkcbrbdckjxajdol": "evolution-speed-roulette",
-            "oqa3v7a2t25ydg5e": "evolution-ruleta-bola-rapida-en-vivo",
-            "p675txa7cdt6za26": "evolution-ruleta-en-espanol",
-            "vctlz20yfnmp1ylr": "evolution-roulette",
-            "wzg6kdkad1oe7m5k": "evolution-vip-roulette",
+            # "7x0b1tgh7agmf6hv": "evolution-immersive-roulette",
+            # "8clwnwrupuvf0osq": "evolution-ruleta-en-vivo",
+            # "48z5pjps3ntvqc1b": "evolution-auto-roulette",
+            # "01rb77cq1gtenhmo": "evolution-auto-roulette-vip",
+            # "LightningSpain01": "evolution-ruleta-relampago-en-vivo",
+            # "LightningTable01": "evolution-lightning-roulette",
+            # "PorROU0000000001": "evolution-roleta-ao-vivo",
+            # "PorROULigh000001": "evolution-roleta-relampago",
+            # "SpeedAutoRo00001": "evolution-speed-auto-roulette",
+            # "XxxtremeLigh0001": "evolution-xxxtreme-lightning-roulette",
+            # "laiayvwaiczqe2p7": "evolution-ruleta-automatica",
+            # "lkcbrbdckjxajdol": "evolution-speed-roulette",
+            # "oqa3v7a2t25ydg5e": "evolution-ruleta-bola-rapida-en-vivo",
+            # "p675txa7cdt6za26": "evolution-ruleta-en-espanol",
+            # "vctlz20yfnmp1ylr": "evolution-roulette",
+            # "wzg6kdkad1oe7m5k": "evolution-vip-roulette",
 
 
 
@@ -131,8 +131,8 @@ class Results :
 
             # trim para 500
             count = collection.count_documents({"roulette_id": slug})
-            if count > 2000:
-                exced = count - 20000
+            if count > 50000:
+                exced = count - 50000
                 antigos = collection.find(
                     {"roulette_id": slug},
                     sort=[("timestamp", 1)],

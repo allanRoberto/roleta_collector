@@ -37,8 +37,8 @@ def main():
 
     # Cria threads para collectors e dummy server
     threads = [
-        # threading.Thread(target=pragmatic.start, name="PragmaticCollector"),
-        # threading.Thread(target=evolution.start, name="EvolutionCollector"),
+        threading.Thread(target=pragmatic.start, name="PragmaticCollector"),
+        threading.Thread(target=evolution.start, name="EvolutionCollector"),
         threading.Thread(target=results.start, name="ResultsCollector"),
         threading.Thread(target=ezugi.start,     name="EzugiCollector"),
     ]

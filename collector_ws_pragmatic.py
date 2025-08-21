@@ -81,8 +81,8 @@ class Pragmatic :
 
             # trim para 500
             count = collection.count_documents({"roulette_id": slug})
-            if count > 2000:
-                exced = count - 2000
+            if count > 50000:
+                exced = count - 50000
                 antigos = collection.find(
                     {"roulette_id": slug},
                     sort=[("timestamp", 1)],
