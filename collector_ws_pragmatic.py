@@ -72,7 +72,7 @@ class Pragmatic :
 
             now = datetime.datetime.now(UTC)
 
-            collection.insert_one({
+            full_result = collection.insert_one({
                 "roulette_id": slug,
                 "roulette_name" : slug,
                 "value": result,
@@ -81,8 +81,8 @@ class Pragmatic :
 
             # trim para 500
             count = collection.count_documents({"roulette_id": slug})
-            if count > 50000:
-                exced = count - 50000
+            if count > 200000:
+                exced = count - 200000
                 antigos = collection.find(
                     {"roulette_id": slug},
                     sort=[("timestamp", 1)],
@@ -92,7 +92,13 @@ class Pragmatic :
 
                 collection.delete_many({"_id": {"$in": ids}})
 
-            r.publish("new_result", json.dumps({"slug": slug, "result": result}))
+            r.publish("new_result", json.dumps({"slug": slug, "result": result, "full_result" : {
+                "_id": full_result.inserted_id,
+                "roulette_id": slug,
+                "roulette_name" : slug,
+                "value": result,
+                "timestamp": now
+            }}))
 
             print(f"[{slug}] ✅ Resultado salvo: {result} (gameId: {game_id})")
         
